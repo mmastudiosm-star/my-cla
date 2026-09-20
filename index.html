@@ -169,17 +169,17 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
     <div id="signup-fields" style="display:none">
       <p style="font-size:12.5px;color:var(--mut);margin:16px 0 10px;text-align:right">شما کی هستید؟</p>
       <div class="role-picker">
-        <div class="role-opt selected" data-role="student" onclick="pickRole('student')">
+        <div class="role-opt selected" data-role="student" onclick="pickRole('student', event)">
           <span class="emoji">👨‍🎓</span>
           <div class="title">دانش‌آموز</div>
           <div class="desc">فقط عضو کلاس می‌شم</div>
         </div>
-        <div class="role-opt" data-role="teacher" onclick="pickRole('teacher')">
+        <div class="role-opt" data-role="teacher" onclick="pickRole('teacher', event)">
           <span class="emoji">👨‍🏫</span>
           <div class="title">معلم</div>
           <div class="desc">کلاس می‌سازم</div>
         </div>
-        <div class="role-opt" data-role="both" onclick="pickRole('both')">
+        <div class="role-opt" data-role="both" onclick="pickRole('both', event)">
           <span class="emoji">👨‍🎓👨‍🏫</span>
           <div class="title">هردو</div>
           <div class="desc">دانش‌آموز و معلم</div>
@@ -454,9 +454,6 @@ const LK_URL = 'wss://tms-bxlk0q2o.livekit.cloud';
 const LK_KEY = 'APIBhvnBREQa54D';
 const LK_SECRET = '18fup4uYJKd3zv7JLeY2JLAPpxtlpi7RvGOEBZcGrQh';
 
-// ═══════════════════════════════════════════════════════════
-// ادمین اصلی — فقط این ایمیل می‌تونه پنل ادمین رو ببینه
-// ═══════════════════════════════════════════════════════════
 const ADMIN_EMAIL = 'sobhan.najafi.h@gmail.com';
 
 const esc = s => { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; };
@@ -477,7 +474,7 @@ let myExpiresAt = null;
 let myIsAdmin = false;
 
 let authMode = 'login';
-let signupRole = 'student';
+let signupRole = 'student'; // ← این متغیر مهمه
 
 async function loadNames(emails) {
   const uniq = [...new Set(emails.filter(e => e && !namesCache[e]))];
@@ -486,7 +483,7 @@ async function loadNames(emails) {
   (data || []).forEach(p => { namesCache[p.email] = p.name || p.email.split('@')[0]; });
 }
 
-// ═══════════ وضعیت اعتبار ═══════════
+/* ═══════════ وضعیت اعتبار ═══════════ */
 function isExpired() {
   if (myIsAdmin) return false;
   if (!myExpiresAt) return false;
@@ -517,32 +514,38 @@ function updateCreditUI() {
 
   if (!myExpiresAt || myIsAdmin) {
     el.innerHTML = '';
-    return;
-  }
-
-  const d = daysLeft();
-  const exp = isExpired();
-
-  if (exp) {
-    el.innerHTML = `
-      <div class="expiry-banner">
-        <h3>⛔ اعتبار شما تمام شده است</h3>
-        <p>برای ادامه استفاده، یکی از بسته‌ها رو انتخاب کن</p>
-        <button class="btn" onclick="showExpiredModal()">💳 مشاهده بسته‌ها</button>
-      </div>
-    `;
   } else {
-    el.innerHTML = `
-      <div class="credit-badge ${d <= 3 ? 'warning' : ''}">
-        ${d <= 3 ? '⚠️' : '⏱'} اعتبار شما: <b>${d}</b> روز باقی‌مانده
-      </div>
-    `;
+    const d = daysLeft();
+    const exp = isExpired();
+
+    if (exp) {
+      el.innerHTML = `
+        <div class="expiry-banner">
+          <h3>⛔ اعتبار شما تمام شده است</h3>
+          <p>برای ادامه استفاده، یکی از بسته‌ها رو انتخاب کن</p>
+          <button class="btn" onclick="showExpiredModal()">💳 مشاهده بسته‌ها</button>
+        </div>
+      `;
+    } else {
+      el.innerHTML = `
+        <div class="credit-badge ${d <= 3 ? 'warning' : ''}">
+          ${d <= 3 ? '⚠️' : '⏱'} اعتبار شما: <b>${d}</b> روز باقی‌مانده
+        </div>
+      `;
+    }
   }
 
   const btnCreate = document.getElementById('btn-create');
   const btnJoin = document.getElementById('btn-join');
   if (btnCreate) btnCreate.style.display = canCreateClass() ? 'flex' : 'none';
   if (btnJoin) btnJoin.style.display = canJoinClass() ? 'flex' : 'none';
+
+  // نمایش نقش در بالای صفحه
+  const emailLbl = document.getElementById('my-email-lbl');
+  if (emailLbl && myRole) {
+    const roleNames = { student: '👨‍🎓 دانش‌آموز', teacher: '👨‍🏫 معلم', both: '👨‍🎓👨‍🏫 هردو' };
+    emailLbl.textContent = (roleNames[myRole] || '') + ' • ' + myEmail;
+  }
 }
 
 window.showExpiredModal = () => {
@@ -557,7 +560,7 @@ function requireCredit() {
   return true;
 }
 
-// ═══════════ Auth ═══════════
+/* ═══════════ Auth ═══════════ */
 window.switchAuthTab = mode => {
   authMode = mode;
   document.getElementById('tab-login').classList.toggle('active', mode === 'login');
@@ -567,8 +570,14 @@ window.switchAuthTab = mode => {
   document.getElementById('auth-msg').textContent = '';
 };
 
-window.pickRole = role => {
+// ═══════════════════════════════════════════════════════════
+// 🎯 تابع انتخاب نقش — این تابع نقش رو ست می‌کنه
+// ═══════════════════════════════════════════════════════════
+window.pickRole = (role, event) => {
+  if (event) event.preventDefault();
   signupRole = role;
+  console.log('🎯 Role picked:', role, '| signupRole now =', signupRole);
+
   document.querySelectorAll('.role-opt').forEach(el => {
     el.classList.toggle('selected', el.dataset.role === role);
   });
@@ -609,6 +618,7 @@ window.submitAuth = async () => {
       localStorage.setItem('myclass_email', email);
       await loadProfileAndEnter(email);
     } else {
+      /* ═══ ثبت‌نام ═══ */
       const { data: existing } = await sb.from('profiles').select('email').eq('email', email).maybeSingle();
       if (existing) {
         msg.textContent = '❌ این ایمیل قبلاً ثبت‌نام شده';
@@ -627,10 +637,20 @@ window.submitAuth = async () => {
 
       const isThisAdmin = (email === ADMIN_EMAIL.toLowerCase());
 
+      // 🎯 نقش نهایی
+      let finalRole = isThisAdmin ? 'both' : signupRole;
+      if (!finalRole || !['student','teacher','both'].includes(finalRole)) {
+        finalRole = 'student';
+      }
+
+      console.log('✅ Final role for', email, ':', finalRole);
+      console.log('   isThisAdmin:', isThisAdmin);
+      console.log('   signupRole:', signupRole);
+
       const { error: insertErr } = await sb.from('profiles').insert({
         email: email,
         name: email.split('@')[0],
-        role: isThisAdmin ? 'both' : signupRole,
+        role: finalRole,  // ← نقش درست
         expires_at: isThisAdmin
           ? new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString()
           : new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
@@ -638,16 +658,20 @@ window.submitAuth = async () => {
       });
 
       if (insertErr) {
+        console.error('❌ Insert error:', insertErr);
         msg.textContent = '❌ ' + insertErr.message;
         msg.style.color = '#ef4444';
         btn.disabled = false; btn.textContent = 'ثبت‌نام';
         return;
       }
 
+      console.log('✅ Profile created with role:', finalRole);
+
       localStorage.setItem('myclass_email', email);
       await loadProfileAndEnter(email);
     }
   } catch (e) {
+    console.error('❌ Catch:', e);
     msg.textContent = '❌ ' + e.message;
     msg.style.color = '#ef4444';
   }
@@ -663,22 +687,25 @@ async function loadProfileAndEnter(email) {
     return;
   }
 
-  // ═══ فقط این ایمیل ادمین هست ═══
   const isThisAdmin = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
 
   myEmail = email;
   myProfile = prof;
-  myRole = prof.role || 'student';
+  myRole = prof.role || 'student';  // ← نقش از DB خونده می‌شه
   myExpiresAt = prof.expires_at;
   myIsAdmin = isThisAdmin;
   namesCache[email] = prof.name || email.split('@')[0];
 
-  // اطمینان از ست شدن is_admin توی دیتابیس
+  console.log('📊 Profile loaded:');
+  console.log('   email:', email);
+  console.log('   role from DB:', prof.role);
+  console.log('   myRole:', myRole);
+  console.log('   is_admin:', isThisAdmin);
+
   if (isThisAdmin && !prof.is_admin) {
     await sb.from('profiles').update({ is_admin: true, role: 'both' }).eq('email', email);
   }
 
-  // اگه ادمین نیست ولی is_admin توی DB true هست، خاموشش کن
   if (!isThisAdmin && prof.is_admin) {
     await sb.from('profiles').update({ is_admin: false }).eq('email', email);
   }
@@ -688,7 +715,6 @@ async function loadProfileAndEnter(email) {
   document.getElementById('user-name').textContent = prof.name || email.split('@')[0];
   document.getElementById('user-avatar').textContent = ini(prof.name || email);
 
-  // نمایش دکمه ادمین — فقط برای ایمیل ادمین
   const adminBtn = document.getElementById('admin-btn');
   if (isThisAdmin) {
     adminBtn.style.display = 'block';
@@ -715,7 +741,7 @@ window.logout = () => {
   location.reload();
 };
 
-// ═══════════ ناوبری ═══════════
+/* ═══════════ ناوبری ═══════════ */
 window.showPage = p => {
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
   document.getElementById('page-' + p).classList.add('active');
@@ -840,10 +866,10 @@ window.changeRole = async (email) => {
 
   const roles = ['student', 'teacher', 'both'];
   const labels = { student: 'دانش‌آموز', teacher: 'معلم', both: 'هردو' };
-  const current = roles.indexOf(user.role);
+  const current = roles.indexOf(user.role || 'student');
   const next = roles[(current + 1) % roles.length];
 
-  if (!confirm(`تغییر نقش از "${labels[user.role]}" به "${labels[next]}"؟`)) return;
+  if (!confirm(`تغییر نقش از "${labels[user.role] || 'نامشخص'}" به "${labels[next]}"؟`)) return;
 
   const { error } = await sb.from('profiles').update({ role: next }).eq('email', email);
   if (error) { alert('خطا: ' + error.message); return; }
@@ -915,7 +941,7 @@ async function loadEdu() {
 window.openEduModal = () => {
   if (!requireCredit()) return;
   if (myRole !== 'teacher' && myRole !== 'both') {
-    alert('شما دانش‌آموز هستید و نمی‌توانید کلاس بسازید');
+    alert('❌ شما دانش‌آموز هستید و نمی‌توانید کلاس بسازید\n\nنقش شما: ' + myRole);
     return;
   }
   document.getElementById('edu-name').value = '';
@@ -965,7 +991,7 @@ document.getElementById('edu-create').onclick = async () => {
 window.openEduJoin = () => {
   if (!requireCredit()) return;
   if (myRole !== 'student' && myRole !== 'both') {
-    alert('شما معلم هستید و فقط می‌توانید کلاس بسازید');
+    alert('❌ شما معلم هستید و نمی‌توانید به کلاس بپیوندید\n\nنقش شما: ' + myRole);
     return;
   }
   document.getElementById('edu-join-code').value = '';
@@ -1622,6 +1648,34 @@ function setupVcChannel() {
 }
 
 document.getElementById('vc-chat-input')?.addEventListener('keypress', e => { if (e.key === 'Enter') sendVcChat(); });
+
+// ═══════════════════════════════════════════════════════════
+// 🐛 دیباگ — توی Console بزن: debugProfile()
+// ═══════════════════════════════════════════════════════════
+window.debugProfile = async (email) => {
+  if (!email) email = prompt('ایمیل:');
+  if (!email) return;
+  const { data, error } = await sb.from('profiles').select('*').eq('email', email).maybeSingle();
+  console.log('📊 Profile in DB:', data);
+  console.log('❌ Error:', error);
+  if (data) {
+    console.log('   role:', data.role);
+    console.log('   is_admin:', data.is_admin);
+    console.log('   expires_at:', data.expires_at);
+  }
+  return data;
+};
+
+window.debugMyRole = () => {
+  console.log('══════ MY STATE ══════');
+  console.log('myEmail:', myEmail);
+  console.log('myRole:', myRole);
+  console.log('myIsAdmin:', myIsAdmin);
+  console.log('myExpiresAt:', myExpiresAt);
+  console.log('signupRole:', signupRole);
+  console.log('══════════════════════');
+  return { myEmail, myRole, myIsAdmin, signupRole };
+};
 
 // ═══════════ شروع ═══════════
 const savedEmail = localStorage.getItem('myclass_email');
