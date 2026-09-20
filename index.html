@@ -474,7 +474,7 @@ let myExpiresAt = null;
 let myIsAdmin = false;
 
 let authMode = 'login';
-let signupRole = 'student'; // ← این متغیر مهمه
+let signupRole = 'student';
 
 async function loadNames(emails) {
   const uniq = [...new Set(emails.filter(e => e && !namesCache[e]))];
@@ -540,7 +540,6 @@ function updateCreditUI() {
   if (btnCreate) btnCreate.style.display = canCreateClass() ? 'flex' : 'none';
   if (btnJoin) btnJoin.style.display = canJoinClass() ? 'flex' : 'none';
 
-  // نمایش نقش در بالای صفحه
   const emailLbl = document.getElementById('my-email-lbl');
   if (emailLbl && myRole) {
     const roleNames = { student: '👨‍🎓 دانش‌آموز', teacher: '👨‍🏫 معلم', both: '👨‍🎓👨‍🏫 هردو' };
@@ -570,19 +569,18 @@ window.switchAuthTab = mode => {
   document.getElementById('auth-msg').textContent = '';
 };
 
-// ═══════════════════════════════════════════════════════════
-// 🎯 تابع انتخاب نقش — این تابع نقش رو ست می‌کنه
-// ═══════════════════════════════════════════════════════════
 window.pickRole = (role, event) => {
   if (event) event.preventDefault();
   signupRole = role;
-  console.log('🎯 Role picked:', role, '| signupRole now =', signupRole);
-
+  console.log('🎯 Role picked:', role);
   document.querySelectorAll('.role-opt').forEach(el => {
     el.classList.toggle('selected', el.dataset.role === role);
   });
 };
 
+// ═══════════════════════════════════════════════════════════
+// 🎯 submitAuth — نسخه‌ی کامل که همه مشکلات رو حل می‌کنه
+// ═══════════════════════════════════════════════════════════
 window.submitAuth = async () => {
   const email = document.getElementById('auth-email').value.trim().toLowerCase();
   const password = document.getElementById('auth-password').value;
@@ -598,59 +596,83 @@ window.submitAuth = async () => {
   msg.textContent = '';
 
   try {
-    if (authMode === 'login') {
-      const { data: prof, error: pe } = await sb.from('profiles').select('*').eq('email', email).maybeSingle();
-      if (pe || !prof) {
-        msg.textContent = '❌ این ایمیل ثبت‌نام نشده';
-        msg.style.color = '#ef4444';
-        btn.disabled = false; btn.textContent = 'ورود';
-        return;
-      }
+    // ═══════════════════════════════════════
+    // مرحله ۱: تلاش برای ورود
+    // ═══════════════════════════════════════
+    const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password });
 
-      const { data: authData, error: authErr } = await sb.auth.signInWithPassword({ email, password });
-      if (authErr) {
-        msg.textContent = '❌ رمز عبور اشتباه است';
-        msg.style.color = '#ef4444';
-        btn.disabled = false; btn.textContent = 'ورود';
-        return;
-      }
+    let success = false;
 
-      localStorage.setItem('myclass_email', email);
-      await loadProfileAndEnter(email);
+    if (!signInErr && signInData?.user) {
+      // ✅ ورود موفق
+      success = true;
+      console.log('✅ Login successful');
     } else {
-      /* ═══ ثبت‌نام ═══ */
-      const { data: existing } = await sb.from('profiles').select('email').eq('email', email).maybeSingle();
-      if (existing) {
-        msg.textContent = '❌ این ایمیل قبلاً ثبت‌نام شده';
+      // ورود ناموفق — اگه حالت ورود بود، خطا
+      if (authMode === 'login') {
+        msg.textContent = '❌ ایمیل یا رمز عبور اشتباه است';
         msg.style.color = '#ef4444';
-        btn.disabled = false; btn.textContent = 'ثبت‌نام';
+        btn.disabled = false;
+        btn.textContent = 'ورود';
         return;
       }
 
-      const { data: authData, error: signupErr } = await sb.auth.signUp({ email, password });
-      if (signupErr) {
-        msg.textContent = '❌ ' + signupErr.message;
+      // ═══════════════════════════════════════
+      // حالت ثبت‌نام: کاربر رو بساز
+      // ═══════════════════════════════════════
+      const { data: signUpData, error: signUpErr } = await sb.auth.signUp({ email, password });
+
+      if (signUpErr) {
+        // اگه خطای "already registered" داد یعنی کاربر هست ولی رمزش اشتباهه
+        if (signUpErr.message.toLowerCase().includes('already') || signUpErr.message.toLowerCase().includes('registered')) {
+          msg.textContent = '❌ این ایمیل قبلاً ثبت‌نام شده. رمز عبورت رو چک کن یا به تب «ورود» برو';
+          msg.style.color = '#ef4444';
+          btn.disabled = false;
+          btn.textContent = 'ثبت‌نام';
+          return;
+        }
+        msg.textContent = '❌ ' + signUpErr.message;
         msg.style.color = '#ef4444';
-        btn.disabled = false; btn.textContent = 'ثبت‌نام';
+        btn.disabled = false;
+        btn.textContent = 'ثبت‌نام';
         return;
       }
+
+      success = true;
+      console.log('✅ Signup successful');
+    }
+
+    // ═══════════════════════════════════════
+    // مرحله ۲: چک کن پروفایل هست یا نه
+    // ═══════════════════════════════════════
+    const { data: existingProfile } = await sb.from('profiles')
+      .select('id, role')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingProfile) {
+      // پروفایل هست → فقط role رو آپدیت کن اگه خالیه
+      console.log('✅ Profile exists:', existingProfile);
+
+      if (!existingProfile.role) {
+        const isThisAdmin = (email === ADMIN_EMAIL.toLowerCase());
+        const finalRole = isThisAdmin ? 'both' : signupRole;
+        await sb.from('profiles').update({ role: finalRole }).eq('email', email);
+      }
+    } else {
+      // پروفایل نیست → بساز
+      console.log('✅ Creating new profile...');
 
       const isThisAdmin = (email === ADMIN_EMAIL.toLowerCase());
-
-      // 🎯 نقش نهایی
       let finalRole = isThisAdmin ? 'both' : signupRole;
-      if (!finalRole || !['student','teacher','both'].includes(finalRole)) {
+      if (!finalRole || !['student', 'teacher', 'both'].includes(finalRole)) {
         finalRole = 'student';
       }
-
-      console.log('✅ Final role for', email, ':', finalRole);
-      console.log('   isThisAdmin:', isThisAdmin);
-      console.log('   signupRole:', signupRole);
 
       const { error: insertErr } = await sb.from('profiles').insert({
         email: email,
         name: email.split('@')[0],
-        role: finalRole,  // ← نقش درست
+        role: finalRole,
         expires_at: isThisAdmin
           ? new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString()
           : new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
@@ -661,15 +683,20 @@ window.submitAuth = async () => {
         console.error('❌ Insert error:', insertErr);
         msg.textContent = '❌ ' + insertErr.message;
         msg.style.color = '#ef4444';
-        btn.disabled = false; btn.textContent = 'ثبت‌نام';
+        btn.disabled = false;
+        btn.textContent = authMode === 'login' ? 'ورود' : 'ثبت‌نام';
         return;
       }
 
-      console.log('✅ Profile created with role:', finalRole);
-
-      localStorage.setItem('myclass_email', email);
-      await loadProfileAndEnter(email);
+      console.log('✅ Profile created');
     }
+
+    // ═══════════════════════════════════════
+    // مرحله ۳: ذخیره و ورود
+    // ═══════════════════════════════════════
+    localStorage.setItem('myclass_email', email);
+    await loadProfileAndEnter(email);
+
   } catch (e) {
     console.error('❌ Catch:', e);
     msg.textContent = '❌ ' + e.message;
@@ -683,23 +710,44 @@ window.submitAuth = async () => {
 async function loadProfileAndEnter(email) {
   const { data: prof } = await sb.from('profiles').select('*').eq('email', email).maybeSingle();
   if (!prof) {
-    alert('پروفایل پیدا نشد');
-    return;
+    // اگه پروفایل نیست، بساز
+    const isThisAdmin = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+    const { error } = await sb.from('profiles').insert({
+      email: email,
+      name: email.split('@')[0],
+      role: isThisAdmin ? 'both' : 'student',
+      expires_at: isThisAdmin
+        ? new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString()
+        : new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
+      is_admin: isThisAdmin
+    });
+
+    if (error) {
+      alert('خطا در ساخت پروفایل: ' + error.message);
+      return;
+    }
+
+    // دوباره بخونش
+    const { data: newProf } = await sb.from('profiles').select('*').eq('email', email).maybeSingle();
+    return await enterWithProfile(newProf, email);
   }
 
+  return await enterWithProfile(prof, email);
+}
+
+async function enterWithProfile(prof, email) {
   const isThisAdmin = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
 
   myEmail = email;
   myProfile = prof;
-  myRole = prof.role || 'student';  // ← نقش از DB خونده می‌شه
+  myRole = prof.role || 'student';
   myExpiresAt = prof.expires_at;
   myIsAdmin = isThisAdmin;
   namesCache[email] = prof.name || email.split('@')[0];
 
   console.log('📊 Profile loaded:');
   console.log('   email:', email);
-  console.log('   role from DB:', prof.role);
-  console.log('   myRole:', myRole);
+  console.log('   role:', prof.role);
   console.log('   is_admin:', isThisAdmin);
 
   if (isThisAdmin && !prof.is_admin) {
@@ -941,7 +989,7 @@ async function loadEdu() {
 window.openEduModal = () => {
   if (!requireCredit()) return;
   if (myRole !== 'teacher' && myRole !== 'both') {
-    alert('❌ شما دانش‌آموز هستید و نمی‌توانید کلاس بسازید\n\nنقش شما: ' + myRole);
+    alert('❌ شما دانش‌آموز هستید و نمی‌توانید کلاس بسازید');
     return;
   }
   document.getElementById('edu-name').value = '';
@@ -991,7 +1039,7 @@ document.getElementById('edu-create').onclick = async () => {
 window.openEduJoin = () => {
   if (!requireCredit()) return;
   if (myRole !== 'student' && myRole !== 'both') {
-    alert('❌ شما معلم هستید و نمی‌توانید به کلاس بپیوندید\n\nنقش شما: ' + myRole);
+    alert('❌ شما معلم هستید و نمی‌توانید به کلاس بپیوندید');
     return;
   }
   document.getElementById('edu-join-code').value = '';
@@ -1649,40 +1697,12 @@ function setupVcChannel() {
 
 document.getElementById('vc-chat-input')?.addEventListener('keypress', e => { if (e.key === 'Enter') sendVcChat(); });
 
-// ═══════════════════════════════════════════════════════════
-// 🐛 دیباگ — توی Console بزن: debugProfile()
-// ═══════════════════════════════════════════════════════════
-window.debugProfile = async (email) => {
-  if (!email) email = prompt('ایمیل:');
-  if (!email) return;
-  const { data, error } = await sb.from('profiles').select('*').eq('email', email).maybeSingle();
-  console.log('📊 Profile in DB:', data);
-  console.log('❌ Error:', error);
-  if (data) {
-    console.log('   role:', data.role);
-    console.log('   is_admin:', data.is_admin);
-    console.log('   expires_at:', data.expires_at);
-  }
-  return data;
-};
-
-window.debugMyRole = () => {
-  console.log('══════ MY STATE ══════');
-  console.log('myEmail:', myEmail);
-  console.log('myRole:', myRole);
-  console.log('myIsAdmin:', myIsAdmin);
-  console.log('myExpiresAt:', myExpiresAt);
-  console.log('signupRole:', signupRole);
-  console.log('══════════════════════');
-  return { myEmail, myRole, myIsAdmin, signupRole };
-};
-
-// ═══════════ شروع ═══════════
+/* ═══════════ شروع ═══════════ */
 const savedEmail = localStorage.getItem('myclass_email');
 if (savedEmail) {
   const { data: prof } = await sb.from('profiles').select('*').eq('email', savedEmail).maybeSingle();
   if (prof) {
-    await loadProfileAndEnter(savedEmail);
+    await enterWithProfile(prof, savedEmail);
   } else {
     localStorage.removeItem('myclass_email');
   }
