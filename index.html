@@ -84,9 +84,9 @@
     } from 'https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.esm.mjs';
 
     // ==================== پیکربندی ====================
-    const LIVEKIT_URL = 'wss://tms-bxlk0q2o.livekit.cloud';
-    const LIVEKIT_API_KEY = 'APIBhvnBREQa54D';
-    const LIVEKIT_API_SECRET = '18fup4uYJKd3zv7JLeY2JLAPpxtlpi7RvGOEBZcGrQh';
+    const LIVEKIT_URL = 'wss://my-45w7ruy2.livekit.cloud';
+    const LIVEKIT_API_KEY = 'APIx6UNDScSuaRG';
+    const LIVEKIT_API_SECRET = 'NWkAX0Ey1Hl0rfAuiupm2kwh3sYtl5TMA75ImapEZWE';
 
     // ==================== عناصر ====================
     const loginScreen = document.getElementById('login-screen');
@@ -112,19 +112,16 @@
     let ROOM_NAME = '';
     let isDrawing = false;
 
-    // ==================== تولید توکن LiveKit (بدون SDK) ====================
-    // ساختار دقیق JWT مطابق با فرمت AccessToken در LiveKit
+    // ==================== تولید توکن ====================
     async function generateToken(roomName, identity) {
       const header = { alg: 'HS256', typ: 'JWT' };
       const now = Math.floor(Date.now() / 1000);
-
-      // ساختار صحیح payload مطابق SDK رسمی LiveKit
       const payload = {
-        exp: now + 3600,            // انقضا: ۱ ساعت بعد
-        iss: LIVEKIT_API_KEY,       // API Key
-        nbf: now - 10,              // ۱۰ ثانیه قبل (برای تحمل اختلاف ساعت)
-        sub: identity,              // شناسه شرکت‌کننده
-        name: identity,             // نام نمایشی
+        exp: now + 3600,
+        iss: LIVEKIT_API_KEY,
+        sub: identity,
+        name: identity,
+        nbf: now,
         video: {
           room: roomName,
           roomJoin: true,
@@ -136,9 +133,7 @@
 
       const base64url = (str) => {
         return btoa(unescape(encodeURIComponent(str)))
-          .replace(/\+/g, '-')
-          .replace(/\//g, '_')
-          .replace(/=+$/, '');
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       };
 
       const headerB64 = base64url(JSON.stringify(header));
@@ -173,7 +168,6 @@
     async function connectToRoom() {
       try {
         const token = await generateToken(ROOM_NAME, USER_NAME);
-        console.log('Token generated:', token);
 
         room = new Room({ adaptiveStream: true, dynacast: true });
 
@@ -207,7 +201,7 @@
           });
 
         await room.connect(LIVEKIT_URL, token);
-        statusEl.textContent = 'متصل شد';
+        statusEl.textContent = 'متصل شد ✅';
 
         const tracks = await createLocalTracks({
           audio: true,
@@ -247,7 +241,7 @@
       }
     }
 
-    // ==================== چت ====================
+    // ==================== چت (لوکال) ====================
     function sendMessage() {
       const message = chatInput.value.trim();
       if (!message) return;
