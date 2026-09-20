@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>کلاس مجازی</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Tahoma, sans-serif; background: #1a1a2e; color: #fff; height: 100vh; overflow: hidden; }
+    .container { display: flex; height: 100vh; }
+    .video-area { flex: 1; display: flex; flex-direction: column; }
+    .video-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px; padding: 8px; overflow-y: auto; }
+    .video-container { position: relative; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
+    .video-container video { width: 100%; height: 100%; object-fit: cover; }
+    .participant-name { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+    .controls { padding: 12px; background: #0f3460; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .controls button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; background: #e94560; color: #fff; font-size: 14px; transition: 0.2s; }
+    .controls button:hover { opacity: 0.9; }
+    .controls button.active { background: #533483; }
+    .sidebar { width: 320px; background: #16213e; display: flex; flex-direction: column; border-right: 1px solid #0f3460; }
+    .sidebar-header { padding: 12px; font-weight: bold; border-bottom: 1px solid #0f3460; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 12px; }
+    .chat-message { margin-bottom: 8px; padding: 8px; background: #1a1a2e; border-radius: 6px; font-size: 13px; word-wrap: break-word; }
+    .chat-message strong { color: #e94560; }
+    .chat-input { padding: 12px; border-top: 1px solid #0f3460; display: flex; gap: 8px; }
+    .chat-input input { flex: 1; padding: 10px; border: none; border-radius: 6px; background: #1a1a2e; color: #fff; }
+    .chat-input button { padding: 10px 16px; border: none; border-radius: 6px; background: #e94560; color: #fff; cursor: pointer; }
+    #whiteboard { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 1000; background: #1a1a2e; cursor: crosshair; }
+    .status { padding: 8px 12px; font-size: 12px; color: #aaa; background: #0f3460; }
+    .error { color: #e94560; padding: 12px; }
+    #login-screen { position: fixed; inset: 0; background: #1a1a2e; display: flex; align-items: center; justify-content: center; z-index: 2000; }
+    #login-screen .box { background: #16213e; padding: 32px; border-radius: 12px; width: 320px; text-align: center; }
+    #login-screen h2 { margin-bottom: 20px; }
+    #login-screen input { width: 100%; padding: 12px; margin-bottom: 12px; border: none; border-radius: 6px; background: #1a1a2e; color: #fff; }
+    #login-screen button { width: 100%; padding: 12px; border: none; border-radius: 6px; background: #e94560; color: #fff; cursor: pointer; font-size: 16px; }
+    @media (max-width: 768px) {
+      .container { flex-direction: column; }
+      .sidebar { width: 100%; height: 300px; border-right: none; border-top: 1px solid #0f3460; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- صفحه ورود -->
+  <div id="login-screen">
+    <div class="box">
+      <h2>🎓 ورود به کلاس</h2>
+      <input id="input-name" type="text" placeholder="نام شما" />
+      <input id="input-room" type="text" placeholder="نام اتاق (مثلاً class-101)" value="class-101" />
+      <button id="btn-join">ورود به کلاس</button>
+    </div>
+  </div>
+
+  <!-- رابط اصلی -->
+  <div class="container">
+    <div class="video-area">
+      <div id="status" class="status">آماده</div>
+      <div id="video-grid" class="video-grid"></div>
+      <div class="controls">
+        <button id="btn-mic" class="active">🎤 میکروفون</button>
+        <button id="btn-camera" class="active">📷 دوربین</button>
+        <button id="btn-screen">🖥️ اشتراک صفحه</button>
+        <button id="btn-whiteboard">✏️ تخته سفید</button>
+        <button id="btn-leave" style="background: #c0392b;">🚪 خروج</button>
+      </div>
+    </div>
+    <div class="sidebar">
+      <div class="sidebar-header">💬 چت کلاس</div>
+      <div id="chat-messages" class="chat-messages"></div>
+      <div class="chat-input">
+        <input id="chat-input" type="text" placeholder="پیام خود را بنویسید..." />
+        <button id="btn-send">ارسال</button>
+      </div>
+    </div>
+  </div>
+  <canvas id="whiteboard"></canvas>
+
+  <script type="module">
+    import {
+      Room,
+      RoomEvent,
+      Track,
+      createLocalTracks,
+    } from 'https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.esm.mjs';
+
+    // ==================== پیکربندی ====================
+    const LIVEKIT_URL = 'wss://tms-bxlk0q2o.livekit.cloud';
+    const LIVEKIT_API_KEY = 'APIBhvnBREQa54D';
+    const LIVEKIT_API_SECRET = '18fup4uYJKd3zv7JLeY2JLAPpxtlpi7RvGOEBZcGrQh';
+
+    // ==================== عناصر ====================
+    const loginScreen = document.getElementById('login-screen');
+    const inputName = document.getElementById('input-name');
+    const inputRoom = document.getElementById('input-room');
+    const btnJoin = document.getElementById('btn-join');
+    const videoGrid = document.getElementById('video-grid');
+    const statusEl = document.getElementById('status');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const btnSend = document.getElementById('btn-send');
+    const btnMic = document.getElementById('btn-mic');
+    const btnCamera = document.getElementById('btn-camera');
+    const btnScreen = document.getElementById('btn-screen');
+    const btnWhiteboard = document.getElementById('btn-whiteboard');
+    const btnLeave = document.getElementById('btn-leave');
+    const whiteboard = document.getElementById('whiteboard');
+    const ctx = whiteboard.getContext('2d');
+
+    // ==================== وضعیت ====================
+    let room;
+    let USER_NAME = '';
+    let ROOM_NAME = '';
+    let isDrawing = false;
+
+    // ==================== تولید توکن LiveKit (بدون SDK) ====================
+    // ساختار دقیق JWT مطابق با فرمت AccessToken در LiveKit
+    async function generateToken(roomName, identity) {
+      const header = { alg: 'HS256', typ: 'JWT' };
+      const now = Math.floor(Date.now() / 1000);
+
+      // ساختار صحیح payload مطابق SDK رسمی LiveKit
+      const payload = {
+        exp: now + 3600,            // انقضا: ۱ ساعت بعد
+        iss: LIVEKIT_API_KEY,       // API Key
+        nbf: now - 10,              // ۱۰ ثانیه قبل (برای تحمل اختلاف ساعت)
+        sub: identity,              // شناسه شرکت‌کننده
+        name: identity,             // نام نمایشی
+        video: {
+          room: roomName,
+          roomJoin: true,
+          canPublish: true,
+          canSubscribe: true,
+          canPublishData: true,
+        },
+      };
+
+      const base64url = (str) => {
+        return btoa(unescape(encodeURIComponent(str)))
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, '');
+      };
+
+      const headerB64 = base64url(JSON.stringify(header));
+      const payloadB64 = base64url(JSON.stringify(payload));
+      const data = `${headerB64}.${payloadB64}`;
+
+      const key = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(LIVEKIT_API_SECRET),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+      const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
+      const sigB64 = base64url(String.fromCharCode(...new Uint8Array(signature)));
+
+      return `${data}.${sigB64}`;
+    }
+
+    // ==================== ورود به کلاس ====================
+    btnJoin.addEventListener('click', async () => {
+      USER_NAME = inputName.value.trim() || 'کاربر-' + Math.floor(Math.random() * 1000);
+      ROOM_NAME = inputRoom.value.trim() || 'class-101';
+
+      loginScreen.style.display = 'none';
+      statusEl.textContent = 'در حال اتصال...';
+
+      await connectToRoom();
+    });
+
+    // ==================== اتصال به LiveKit ====================
+    async function connectToRoom() {
+      try {
+        const token = await generateToken(ROOM_NAME, USER_NAME);
+        console.log('Token generated:', token);
+
+        room = new Room({ adaptiveStream: true, dynacast: true });
+
+        room
+          .on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
+            const element = track.attach();
+            element.id = `video-${participant.identity}`;
+            if (!document.getElementById(element.id)) {
+              const container = document.createElement('div');
+              container.className = 'video-container';
+              container.id = `container-${participant.identity}`;
+              container.appendChild(element);
+
+              const nameEl = document.createElement('div');
+              nameEl.className = 'participant-name';
+              nameEl.textContent = participant.identity;
+              container.appendChild(nameEl);
+
+              videoGrid.appendChild(container);
+            }
+          })
+          .on(RoomEvent.TrackUnsubscribed, (track, pub, participant) => {
+            track.detach();
+            document.getElementById(`container-${participant.identity}`)?.remove();
+          })
+          .on(RoomEvent.ParticipantDisconnected, (participant) => {
+            document.getElementById(`container-${participant.identity}`)?.remove();
+          })
+          .on(RoomEvent.Disconnected, () => {
+            statusEl.textContent = 'اتصال قطع شد';
+          });
+
+        await room.connect(LIVEKIT_URL, token);
+        statusEl.textContent = 'متصل شد';
+
+        const tracks = await createLocalTracks({
+          audio: true,
+          video: { resolution: { width: 640, height: 480 } },
+        });
+
+        for (const track of tracks) {
+          await room.localParticipant.publishTrack(track);
+        }
+
+        // نمایش ویدیوی خودم
+        const localVideo = document.createElement('video');
+        localVideo.muted = true;
+        localVideo.autoplay = true;
+        localVideo.playsInline = true;
+
+        const localContainer = document.createElement('div');
+        localContainer.className = 'video-container';
+        localContainer.id = 'container-local';
+
+        const localName = document.createElement('div');
+        localName.className = 'participant-name';
+        localName.textContent = `${USER_NAME} (شما)`;
+
+        localContainer.appendChild(localVideo);
+        localContainer.appendChild(localName);
+        videoGrid.prepend(localContainer);
+
+        for (const track of tracks) {
+          if (track.kind === Track.Kind.Video || track.kind === Track.Kind.Audio) {
+            track.attach(localVideo);
+          }
+        }
+      } catch (error) {
+        console.error('خطا در اتصال:', error);
+        statusEl.innerHTML = `<span class="error">خطا: ${error.message}</span>`;
+      }
+    }
+
+    // ==================== چت ====================
+    function sendMessage() {
+      const message = chatInput.value.trim();
+      if (!message) return;
+      addChatMessage(USER_NAME, message);
+      chatInput.value = '';
+    }
+
+    function addChatMessage(user, message) {
+      const el = document.createElement('div');
+      el.className = 'chat-message';
+      el.innerHTML = `<strong>${user}:</strong> ${message}`;
+      chatMessages.appendChild(el);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // ==================== تخته سفید ====================
+    function resizeCanvas() {
+      whiteboard.width = window.innerWidth;
+      whiteboard.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    whiteboard.addEventListener('mousedown', (e) => {
+      isDrawing = true;
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    });
+
+    whiteboard.addEventListener('mousemove', (e) => {
+      if (!isDrawing) return;
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+    });
+
+    whiteboard.addEventListener('mouseup', () => {
+      isDrawing = false;
+      ctx.closePath();
+    });
+
+    // ==================== کنترل‌ها ====================
+    btnMic.addEventListener('click', async () => {
+      const enabled = room.localParticipant.isMicrophoneEnabled;
+      await room.localParticipant.setMicrophoneEnabled(!enabled);
+      btnMic.classList.toggle('active', !enabled);
+    });
+
+    btnCamera.addEventListener('click', async () => {
+      const enabled = room.localParticipant.isCameraEnabled;
+      await room.localParticipant.setCameraEnabled(!enabled);
+      btnCamera.classList.toggle('active', !enabled);
+    });
+
+    btnScreen.addEventListener('click', async () => {
+      await room.localParticipant.setScreenShareEnabled(true);
+    });
+
+    btnWhiteboard.addEventListener('click', () => {
+      const isHidden = whiteboard.style.display === 'none' || whiteboard.style.display === '';
+      whiteboard.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) {
+        ctx.clearRect(0, 0, whiteboard.width, whiteboard.height);
+        ctx.strokeStyle = '#e94560';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+      }
+    });
+
+    btnLeave.addEventListener('click', async () => {
+      await room?.disconnect();
+      window.location.reload();
+    });
+
+    btnSend.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+  </script>
+</body>
+</html>
